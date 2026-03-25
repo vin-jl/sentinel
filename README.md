@@ -1,12 +1,14 @@
 # Sentinel
 
-A secure, asynchronous Python gateway that intercepts data-sensitive AI prompts, masks PII via Microsoft Presidio into a Redis-backed token vault, and routes queries between a local Dockerized LLM and Google Gemini, logging telemetry to a serverless SQLite database.
+A zero-trust AI gateway for real-time PII masking, dynamic LLM routing, and telemetry logging.
+
+Sentinel provides a secure, asynchronous Python gateway that intercepts data-sensitive AI prompts. It detects and masks PII using Presidio, storing the masked values in a Redis-backed token vault. The system then dynamically routes queries via Langchain and logs telemetry to a serverless SQLite database.
 
 ---
 
 ## Motivation
 
-Most enterprises want to adopt AI assistants but face a hard constraint: sensitive data (names, emails, phone numbers) cannot be sent to third-party LLM providers. The typical answer is to either ban cloud LLMs entirely or trust the provider's data handling.
+Most enterprises (or even small groups) want to adopt AI assistants but face a hard constraint: sensitive data (names, emails, phone numbers) cannot be sent to third-party LLM providers. The typical answer is to either ban cloud LLMs entirely or trust the provider's data handling.
 
 Sentinel sits between the user-facing chatbot (Microsoft Copilot Studio) and the LLMs, acting as a governance layer that strips user-sensitive before any prompt leaves the network, vaults the original values in a TTL-scoped Redis store, and restores them in the response. Simple queries stay on a local Ollama instance that never touches the internet; only complex prompts that need a larger model are forwarded to Gemini, with PII already removed.
 
@@ -123,36 +125,43 @@ The agent will now route all messages through Sentinel.
 ---
 
 ## Architecture
-
 ```
-                         POST Request
-                              |
-                       [ Ngrok Tunnel ]
-                              |
-                   +----------v----------+
-                   |     gateway-api     |  Port 8000 (only exposed service)
-                   |     (FastAPI)       |
-                   +--+-----+-----+--+---+
-                      |     |     |  |
-        sentinel_net  |     |     |  |  host volume
-         (internal)   |     |     |  |  (./data:/data)
-          +-----------+     |     |  +----------+
-          |                 |     |             |
-     +----v----+   +--------v--+  |       +-----v-----+
-     | redis-  |   | llm-local |  |       | data/     |
-     | vault   |   | (Ollama)  |  |       | .db       |
-     | :6379   |   | :11434    |  |       +-----------+
-     +---------+   +-----------+  |
-                                  |  external (HTTPS)
-        internal network          |  PII already stripped
-        no host ports             |
-                            +-----v-----+
-                            |  Gemini   |
-                            |  (Google) |
-                            |  cloud    |
-                            +-----------+
+         [ Client ]
+             |
+             |    POST /v1/chat (X-API-Key)
+             v
++---------------------------------------+
+|    1. Auth & Intercept (FastAPI)      |
++---------------------------------------+
+             |
+             |    (Internal Network)
+             v
++---------------------------------------+
+|    2. PII Masking (Presidio)          | <---> [ Redis Vault ] 
++---------------------------------------+      
+             |
+             v
++---------------------------------------+
+|    3. Semantic Router (LangChain)     |
++---------------------------------------+
+          /                   \
+     (Simple)               (Complex)
+        /                       \
+ [ Local Ollama ]         [ Google Gemini ]
+        \                       /
+         +----------+----------+
+                    |
+                    v
++---------------------------------------+
+|    4. PII Unmasking                   | <---> [ Redis Vault ]
++---------------------------------------+
+                    |
+                    | (Async)
+                    +------------> [ SQLite Telemetry DB ]
+                    |                   (Host Volume)
+                    v
+            [ JSON Response ]
 ```
-
 - **redis-vault** and **llm-local** are on an internal Docker bridge network with zero host port exposure.
 - **Gemini** is called over HTTPS from the gateway container — PII is already stripped before the request leaves.
 - **data/.db** is a host volume mount (`./data:/data`), not a network service.
