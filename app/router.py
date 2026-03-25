@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from functools import partial
 
 from langchain_ollama import ChatOllama
@@ -43,15 +44,17 @@ _LENGTH_TIERS: list[tuple[int, int]] = [
 # Question complexity - multiple question marks suggest multi-part reasoning
 _MULTI_QUESTION_THRESHOLD = 2
 _MULTI_QUESTION_SCORE = 2
+_TOKEN_PATTERN = re.compile(r"[a-z0-9-]+")
 
 
 def _compute_complexity_score(text: str) -> int:
     score = 0
-    words = set(text.lower().split())
+    normalized = text.lower()
+    words = set(_TOKEN_PATTERN.findall(normalized))
 
     # 1. Keyword scoring
     for keyword, weight in _KEYWORD_WEIGHTS.items():
-        if keyword in words:
+        if keyword in words or re.search(rf"\b{re.escape(keyword)}\b", normalized):
             score += weight
 
     # 2. Length scoring
