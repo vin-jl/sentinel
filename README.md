@@ -133,3 +133,4 @@ sentinel-gateway/
     ├── vault.py            # Redis + Presidio PII masking/unmasking
     └── router.py           # LangChain LLM routing (Ollama vs Gemini)
 ```
+# sentinel
