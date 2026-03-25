@@ -5,6 +5,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 DB_PATH = Path("/data/telemetry.db")
+_SQLITE_TIMEOUT_SECONDS = 5
 
 _CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS query_logs (
@@ -26,7 +27,7 @@ VALUES (?, ?, ?, ?, ?)
 # Create the telemetry database and table if it does not exist
 def init_db() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with sqlite3.connect(str(DB_PATH)) as conn:
+    with sqlite3.connect(str(DB_PATH), timeout=_SQLITE_TIMEOUT_SECONDS) as conn:
         conn.execute(_CREATE_TABLE_SQL)
 
 # Insert a telemetry row using a fresh, thread-safe connection
@@ -39,7 +40,7 @@ def log_telemetry(
 ) -> None:
     # Called from FastAPI BackgroundTasks so the response is not blocked by database writes
     try:
-        with sqlite3.connect(str(DB_PATH)) as conn:
+        with sqlite3.connect(str(DB_PATH), timeout=_SQLITE_TIMEOUT_SECONDS) as conn:
             conn.execute(
                 _INSERT_LOG_SQL,
                 (session_id, model_routed_to, input_tokens, pii_entities_masked, latency_ms),

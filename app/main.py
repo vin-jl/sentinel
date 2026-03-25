@@ -1,8 +1,9 @@
+import asyncio
 import logging
 import time
 from contextlib import asynccontextmanager
 
-from fastapi import BackgroundTasks, FastAPI, Request, Security, status
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, Security, status
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
@@ -67,7 +68,13 @@ async def chat(request: Request, payload: ChatRequest, background_tasks: Backgro
     start = time.perf_counter()
     masked_text, pii_count = mask_pii(payload.message, payload.session_id)
 
-    raw_response, model_name = await route_query(masked_text)
+    try:
+        raw_response, model_name = await route_query(masked_text)
+    except asyncio.TimeoutError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Upstream model request timed out",
+        ) from exc
     unmasked_response = unmask_pii(raw_response, payload.session_id)
 
     latency_ms = int((time.perf_counter() - start) * 1000)
