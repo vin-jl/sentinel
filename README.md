@@ -6,9 +6,9 @@ A secure, asynchronous Python gateway that intercepts data-sensitive AI prompts,
 
 ## Motivation
 
-Most enterprises want to adopt AI assistants but face a hard constraint: sensitive data (names, emails, phone numbers) cannot be sent to third-party LLM providers. The typical answer is to either ban cloud LLMs entirely or trust the provider's data handling — neither is acceptable.
+Most enterprises want to adopt AI assistants but face a hard constraint: sensitive data (names, emails, phone numbers) cannot be sent to third-party LLM providers. The typical answer is to either ban cloud LLMs entirely or trust the provider's data handling.
 
-Sentinel takes a different approach. It sits between the user-facing chatbot (Microsoft Copilot Studio) and the LLMs, acting as a governance layer that strips user-sensitive before any prompt leaves the network, vaults the original values in a TTL-scoped Redis store, and restores them in the response. Simple queries stay on a local Ollama instance that never touches the internet; only complex prompts that genuinely need a larger model are forwarded to Gemini, with PII already removed.
+Sentinel sits between the user-facing chatbot (Microsoft Copilot Studio) and the LLMs, acting as a governance layer that strips user-sensitive before any prompt leaves the network, vaults the original values in a TTL-scoped Redis store, and restores them in the response. Simple queries stay on a local Ollama instance that never touches the internet; only complex prompts that need a larger model are forwarded to Gemini, with PII already removed.
 
 ---
 
