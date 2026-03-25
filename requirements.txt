@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+redis
+langchain
+langchain-community
+langchain-ollama
+langchain-google-genai
+presidio-analyzer
+presidio-anonymizer
+spacy
+pydantic
+pydantic-settings
+python-dotenv
+slowapi

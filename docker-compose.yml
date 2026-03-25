@@ -1,0 +1,46 @@
+networks:
+  sentinel_net:
+    driver: bridge
+
+services:
+  redis-vault:
+    image: redis:alpine
+    container_name: redis-vault
+    command: redis-server --maxmemory 128mb --maxmemory-policy volatile-ttl
+    expose:
+      - "6379"
+    networks:
+      - sentinel_net
+    restart: unless-stopped
+
+  llm-local:
+    image: ollama/ollama
+    container_name: llm-local
+    expose:
+      - "11434"
+    volumes:
+      - ollama_weights:/root/.ollama
+    networks:
+      - sentinel_net
+    restart: unless-stopped
+
+  gateway-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gateway-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    env_file:
+      - .env
+    networks:
+      - sentinel_net
+    depends_on:
+      - redis-vault
+      - llm-local
+    restart: unless-stopped
+
+volumes:
+  ollama_weights:

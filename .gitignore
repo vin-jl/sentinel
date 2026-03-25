@@ -1,0 +1,30 @@
+# ── Environment & Secrets ──
+.env
+
+# ── Data / Telemetry ──
+data/*.db
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ── Virtual Environments ──
+venv/
+.venv/
+env/
+
+# ── IDE / Editor ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Docker ──
+*.log
