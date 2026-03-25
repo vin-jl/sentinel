@@ -132,7 +132,7 @@ The agent will now route all messages through Sentinel.
                    +----------v----------+
                    |     gateway-api     |  Port 8000 (only exposed service)
                    |     (FastAPI)       |
-                   +--+-----+-----+--+--+
+                   +--+-----+-----+--+---+
                       |     |     |  |
         sentinel_net  |     |     |  |  host volume
          (internal)   |     |     |  |  (./data:/data)
